@@ -98,6 +98,107 @@ export default function Clientes() {
             });
     }, [selectedRowKeys]);
 
+    function formatCPF(value) {
+        const formattedValue = value
+            .replace(/\D/g, '')
+            .slice(0, 11);
+
+        let formattedCPF = '';
+        if (formattedValue.length >= 3) {
+            formattedCPF += formattedValue.substr(0, 3) + '.';
+        }
+        if (formattedValue.length >= 6) {
+            formattedCPF += formattedValue.substr(3, 3) + '.';
+        }
+        if (formattedValue.length >= 9) {
+            formattedCPF += formattedValue.substr(6, 3) + '-';
+        }
+        if (formattedValue.length >= 11) {
+            formattedCPF += formattedValue.substr(9, 2);
+        }
+
+        if (value.replace(/\D/g, '').length > 11) {
+            setCpfNum(true)
+        } else {
+            setCpfNum(false)
+        }
+
+        if (value.replace(/\D/g, '').length < 11) {
+            setCpfNumMenor(true)
+        } else {
+            setCpfNumMenor(false)
+        }
+
+        setCPF(formattedCPF);
+    }
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (name && emailFormat.test(email) && cpf && !cpfNum && !cpfNumMenor && telephone) {
+            if (isNewClient) {
+                try {
+                    const response = await api.post('/client-new', { name, email, cpf, telephone });
+
+                    message.success("Cliente Adicionado com sucesso!");
+                    setTimeout(() => {
+                        setIsModalOpen(false);
+                        form.resetFields();
+                        window.location.reload();
+                    }, 2000);
+                } catch (error) {
+                    if (error.response.data === "Cliente já existe!") {
+                        message.error("CPF já cadastrado. Por favor, insira um CPF válido.");
+                        return;
+                    }
+                    message.error("Erro ao adicionar cliente!");
+                }
+            } else {
+                try {
+                    const response = await api.put('/clients/update', { _id, name, email, cpf, telephone });
+                    message.success("Cliente atualizado com sucesso!");
+                    setTimeout(() => {
+                        setIsModalOpen(false);
+                        form.resetFields();
+                        window.location.reload();
+                    }, 2000);
+                } catch (error) {
+                    message.error("Erro!");
+                }
+            }
+        } else {
+            if (!name && !email && !cpf && !telephone) {
+                message.error("Campos vazios!");
+            } else {
+                if (!emailFormat.test(email)) {
+                    setEmailAproved(false);
+                    message.error("Email com formato errado! Exemplo: taxbrain@email.com");
+                }
+                if (!cpf) {
+                    setCPFAproved(false);
+                    message.error("Voce precisa adicionar um CPF compatível");
+                }
+                if (cpfNum) {
+                    setCPFAproved(false);
+                    message.error("CPF deve ter no máximo 11 caracteres");
+                }
+                if (cpfNumMenor) {
+                    setCPFAproved(false);
+                    message.error("CPF deve ter 11 caracteres");
+                }
+                if (!telephone) {
+                    message.error("Voce precisa adicionar um Telefone");
+                }
+                if (!name) {
+                    setNameAproved(false);
+                    message.error("Voce precisa adicionar um Nome");
+                }
+            }
+
+        }
+    };
+
     const handleSave = () => {
         form.resetFields();
         setIsModalOpen(true);
