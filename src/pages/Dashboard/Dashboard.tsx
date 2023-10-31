@@ -161,6 +161,7 @@ export default function Dashboard() {
   const [year, setYear] = useState<number>();
   const [dateFilter, setDateFilter] = useState<DataTypeFilter[]>([]);
   const [hasFilters, setHasFilters] = useState(false);
+  const [hasCosMonth, sethasCosMonth] = useState(false);
 
   useEffect(() => {
     api.get<DataType[]>('clients')
@@ -173,6 +174,17 @@ export default function Dashboard() {
       });
   }, [isModalOpen]);
 
+  function checkHasCosMonth(month, year) {
+    for (const data of income) {
+      if (data.month === month && data.year === year) {
+        sethasCosMonth(true);
+        return;
+      }
+    }
+    sethasCosMonth(false);
+  }
+  
+
   function fetchData() {
     api.get<DataTypeIncome[]>('income/find-all')
       .then(response => {
@@ -184,11 +196,11 @@ export default function Dashboard() {
         console.error(error);
       });
   }
-  
+
   useEffect(() => {
     fetchData();
   }, []);
-  
+
   function handleRemoveFilters() {
     message.success("Filtros Retirados com sucesso!");
     fetchData();
@@ -236,19 +248,25 @@ export default function Dashboard() {
     if (extraIncome == null || extraIncome == undefined) {
       setExtraIncome(0);
     }
-    try {
-      const response = await api.post('/income', { fixedIncome, extraIncome, client, month, year });
-      message.success("Calculo realizado com sucesso!");
-      setTimeout(() => {
-        setIsModalOpen(false);
-        form.resetFields();
-        window.location.reload();
-      }, 2000);
-    } catch (error) {
-      message.error("Erro!");
+    checkHasCosMonth(month, year);
+  
+    if (hasCosMonth) {
+      message.success("Já cadastrada uma renda nessa Data");
+    } else {
+      try {
+        const response = await api.post('/income', { fixedIncome, extraIncome, client, month, year });
+        message.success("Cálculo realizado com sucesso!");
+        setTimeout(() => {
+          setIsModalOpen(false);
+          form.resetFields();
+          window.location.reload();
+        }, 2000);
+      } catch (error) {
+        message.error("Erro!");
+      }
     }
-
   };
+  
 
   const handleFilterSubmit = async (event) => {
     const fetchFilteredData = async () => {
